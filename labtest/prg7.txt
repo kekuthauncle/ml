@@ -1,42 +1,41 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\froman\fcharset0 TimesNewRomanPS-BoldMT;\f1\froman\fcharset0 TimesNewRomanPSMT;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
-{\*\expandedcolortbl;;\csgray\c0;}
-\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0\b\fs18 \cf2 PROGRAM 1\
+program 7:
 
-\f1\b0 import csv\
-def loaddata(filename):\
-with open(filename,'r')as f:\
-reader = csv.reader(f)\
-data = list(reader)\
-header = data[0]\
-instances = data[1:]\
-return header,instances\
-def finds(data):\
-for instance in data:\
-if instance[-1].lower() == 'yes':\
-hypothesis = instance[:-1]\
-else:\
-None\
-for instance in data:\
-if instance[-1].lower() == 'yes':\
-for i in range(len(hypothesis)):\
-if hypothesis[i] != instance[i]:\
-hypothesis[i] = '?'\
-return hypothesis\
-filename = 'trainingdata.csv'\
-header,data = loaddata(filename)\
-print('Attributes:',header)\
-print(' ')\
-print('Training data')\
-for row in data:\
-print(row)\
-hypothesis = finds(data)\
-if hypothesis:\
-print('Most specific hypothesis by FIND-S')\
-print(hypothesis)\
-else:\
-print('No positive training examples in training data')}
+import seaborn as sns
+import numpy as np
+from scipy import stats
+import pandas as pd
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+
+iris = sns.load_dataset('iris')
+
+s = iris[iris['species'] == 'setosa']
+v = iris[iris['species'] == 'versicolor']
+
+s_length = s['petal_length']
+v_length = v['petal_length']
+
+t_stat, p_value = stats.ttest_ind(s_length, v_length)
+alpha = 0.05
+
+if p_value < alpha:
+    print("Reject the null hypothesis")
+    print("There is a significant difference between the petal length of Iris setosa and Iris versicolor.")
+else:
+    print("Fail to reject the null hypothesis")
+    print("There is no significant difference between the petal length of Iris setosa and Iris versicolor.")
+
+model = ols('sepal_length ~ C(species)', data=iris).fit()
+anova_table = sm.stats.anova_lm(model, typ=2)
+
+print("\nOne-Way ANOVA Results (statsmodels):")
+print(anova_table)
+
+p_value = anova_table['PR(>F)'].iloc[0]
+alpha = 0.05
+
+if p_value < alpha:
+    print("Reject the null hypothesis: There is a significant difference between sepal length among the species.")
+else:
+    print("Fail to reject the null hypothesis: No significant difference between sepal length among the species.")
