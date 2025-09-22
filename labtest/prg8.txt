@@ -1,42 +1,67 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\froman\fcharset0 TimesNewRomanPS-BoldMT;\f1\froman\fcharset0 TimesNewRomanPSMT;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
-{\*\expandedcolortbl;;\csgray\c0;}
-\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0\b\fs18 \cf2 PROGRAM 1\
+program 8:
 
-\f1\b0 import csv\
-def loaddata(filename):\
-with open(filename,'r')as f:\
-reader = csv.reader(f)\
-data = list(reader)\
-header = data[0]\
-instances = data[1:]\
-return header,instances\
-def finds(data):\
-for instance in data:\
-if instance[-1].lower() == 'yes':\
-hypothesis = instance[:-1]\
-else:\
-None\
-for instance in data:\
-if instance[-1].lower() == 'yes':\
-for i in range(len(hypothesis)):\
-if hypothesis[i] != instance[i]:\
-hypothesis[i] = '?'\
-return hypothesis\
-filename = 'trainingdata.csv'\
-header,data = loaddata(filename)\
-print('Attributes:',header)\
-print(' ')\
-print('Training data')\
-for row in data:\
-print(row)\
-hypothesis = finds(data)\
-if hypothesis:\
-print('Most specific hypothesis by FIND-S')\
-print(hypothesis)\
-else:\
-print('No positive training examples in training data')}
+import numpy as np
+import pandas as pd
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+
+data = load_iris()
+x = data.data
+y = data.target
+y = pd.get_dummies(y).values
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=20, random_state=4)
+
+learning_rate = 0.1
+iterations = 5000
+N = y_train.size
+input_size = 4
+hidden_size = 2
+output_size = 3
+
+results = pd.DataFrame({"accuracy": [0]})
+np.random.seed(10)
+
+W1 = np.random.normal(scale=0.5, size=(input_size, hidden_size))
+W2 = np.random.normal(scale=0.5, size=(hidden_size, output_size))
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def accuracy(y_pred, y_true):
+    acc = y_pred.argmax(axis=1) == y_true.argmax(axis=1)
+    return acc.mean()
+
+for itr in range(iterations):
+    Z1 = np.dot(x_train, W1)
+    A1 = sigmoid(Z1)
+    Z2 = np.dot(A1, W2)
+    A2 = sigmoid(Z2)
+
+    acc = accuracy(A2, y_train)
+    new_row = pd.DataFrame({"accuracy": [acc]})
+    results = pd.concat([results, new_row], ignore_index=True)
+
+    E1 = A2 - y_train
+    dW1 = E1 * A2 * (1 - A2)
+    E2 = np.dot(dW1, W2.T)
+    dW2 = E2 * A1 * (1 - A1)
+
+    W2_update = np.dot(A1.T, dW1) / N
+    W1_update = np.dot(x_train.T, dW2) / N
+
+    W2 = W2 - learning_rate * W2_update
+    W1 = W1 - learning_rate * W1_update
+
+Z1 = np.dot(x_test, W1)
+A1 = sigmoid(Z1)
+Z2 = np.dot(A1, W2)
+A2 = sigmoid(Z2)
+
+acc = accuracy(A2, y_test)
+print("Accuracy: {}".format(acc))
+
+results.accuracy.plot(title="Accuracy")
+plt.show()
